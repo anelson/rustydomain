@@ -1,0 +1,8 @@
+[package]
+
+name = "rustydomain"
+version = "0.1.0"
+authors = [ "Adam Nelson <anelson@apocryph.org>" ]
+
+[dependencies]
+regex="0.1.0"
