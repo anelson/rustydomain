@@ -10,16 +10,8 @@ use rustydomain::markov::Markov;
 static ORDER: u32 = 2;
 
 fn main() {
-	let mut file =  match File::open("data/domains.txt") {
-		Ok(handle) => handle,
-		Err(e) => {
-			panic!("Error opening domains file: {}", e);
-		}
-	};
-
 	println!("Loading domains file");
-	let domains = Domains::load(&mut file);
-	drop(file);
+	let domains = Domains::open("data/domains.sqlite3");
 	println!("Domains file loaded");
 
 	let mut markov = Markov::new(ORDER);
@@ -30,7 +22,9 @@ fn main() {
 	persist_markov(&markov);
 }
 
-fn train_markov(domains: &Domains, markov: &mut Markov) {
+fn train_markov(_domains: &Domains, _markov: &mut Markov) {
+	unimplemented!();
+	/*
 	let mut count: u32 = 0;
 	let total = domains.domains.len() as f32;
 
@@ -43,6 +37,7 @@ fn train_markov(domains: &Domains, markov: &mut Markov) {
 
 		markov.learn(&domain);
 	}
+	*/
 }
 
 fn persist_markov(markov: &Markov) {

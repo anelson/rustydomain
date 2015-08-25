@@ -8,10 +8,8 @@ extern crate rustydomain;
 
 use std::io::BufReader;
 use std::io::BufRead;
-use std::io::BufWriter;
 use std::io::Write;
 use std::fs::File;
-use std::collections::BTreeSet;
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread;
@@ -20,10 +18,14 @@ use regex::Regex;
 
 use glob::glob;
 
-use rustydomain::domains;
+use rustydomain::domains::Domains;
 
 fn main() {
 	let (tx, rx) = mpsc::sync_channel::<Arc<String>>(1024);
+
+	let writer = thread::spawn(move || {
+		domain_writer(rx);
+	});
 
 	let readers: Vec<_> = glob("data/*.zone").unwrap().into_iter().map(|p| {
 		let tx = tx.clone();
@@ -31,10 +33,6 @@ fn main() {
 			file_reader(&p.unwrap().as_path().to_str().unwrap(), tx);
 		})
 	}).collect();
-
-	let writer = thread::spawn(move || {
-		domain_writer(rx);
-	});
 
 	println!("Waiting for file reader threads to complete");
 	for reader in readers {
@@ -67,7 +65,7 @@ fn file_reader(p: &str, tx: mpsc::SyncSender<Arc<String>>) {
 		line_number += 1;
 		if line_number % 100000 == 0 {
 			print!("Processing {} line {}\r", p, line_number);
-			std::io::stdout().flush().unwrap();
+			std::io::stdout().flush().ok().expect("flush");
 		}
 
 		match line {
@@ -78,7 +76,7 @@ fn file_reader(p: &str, tx: mpsc::SyncSender<Arc<String>>) {
 						if domain != last_domain {
 							let domain = String::from(domain);
 							last_domain = domain.clone();
-							tx.send(Arc::new(domain)).unwrap();
+							tx.send(Arc::new(domain)).ok().expect("send");
 						}
 					},
 					None => {
@@ -95,19 +93,18 @@ fn file_reader(p: &str, tx: mpsc::SyncSender<Arc<String>>) {
 }
 
 fn domain_writer(rx: mpsc::Receiver<Arc<String>>) {
-	let f = File::create("data/domains.txt").unwrap();
-	let mut writer = BufWriter::new(f);
-
-	let mut domains = BTreeSet::new();
-	//let mut domains = HashSet::with_capacity(100_000_000);
+	let mut domains = Domains::create("data/domains.sqlite3");
 	let mut unique_domains = 0;
 
+	domains.begin_transaction();
+
 	for domain in rx.iter() {
-		if domains.insert(domain.clone()) {
+		if domains.add(&domain) {
 			unique_domains += 1;
-			write!(writer, "{}\n", domain).unwrap();
 		}
 	}
+
+	domains.commit_transaction();
 
 	println!("Found {} unique domains", unique_domains);
 }
