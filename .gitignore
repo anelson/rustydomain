@@ -13,3 +13,7 @@
 # Data files are too large to go into git
 /data/*.gz
 /data/*.zone
+data/com.zone.bad
+data/com.zone.gz.md5
+data/domains.txt
+data/domains.txt.old
