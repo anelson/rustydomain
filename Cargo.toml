@@ -7,5 +7,5 @@ authors = [ "Adam Nelson <anelson@apocryph.org>" ]
 [dependencies]
 regex="0.1.0"
 glob = "*"
-rust-sqlite = "0.2.0"
+rusqlite = "0.2.0"
 rust-crypto = "0.2.0"

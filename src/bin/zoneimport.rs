@@ -95,16 +95,20 @@ fn file_reader(p: &str, tx: mpsc::SyncSender<Arc<String>>) {
 fn domain_writer(rx: mpsc::Receiver<Arc<String>>) {
 	let mut domains = Domains::create("data/domains.sqlite3");
 	let mut unique_domains = 0;
-
-	domains.begin_transaction();
+	let mut tx = domains.begin_transaction();
 
 	for domain in rx.iter() {
 		if domains.add(&domain) {
 			unique_domains += 1;
+
+			if unique_domains % 10000 == 0 {
+				tx.commit();
+				let tx = domains.begin_transaction();
+			}
 		}
 	}
 
-	domains.commit_transaction();
+	tx.commit();
 
 	println!("Found {} unique domains", unique_domains);
 }
